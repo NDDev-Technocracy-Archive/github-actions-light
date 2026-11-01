@@ -47,8 +47,10 @@ def load_pin() -> dict:
 
 def assert_public_ci() -> None:
     workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
-    if "runs-on: ubuntu-latest" not in workflow:
-        fail("public CI must use ubuntu-latest")
+    if "runs-on: ubuntu-26.04" not in workflow:
+        fail("public CI must use the exact ubuntu-26.04 image")
+    if "-latest" in workflow:
+        fail("public CI must not use a floating -latest runner label")
     if "self-hosted" in workflow or "nddev-linux" in workflow:
         fail("public CI must not use self-hosted labels")
     if "pull_request_target" in workflow or "secrets:" in workflow:

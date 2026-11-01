@@ -17,7 +17,7 @@ pool, or custom job queue here.
 
 GitHub already stamps `self-hosted`, `Linux`, and `X64`. Callers of private
 workflows pass `nddev-linux` (or `[self-hosted, nddev-linux]`). Public
-repositories must keep using GitHub-hosted labels such as `ubuntu-latest`.
+repositories must keep using exact GitHub-hosted labels such as `ubuntu-26.04`.
 
 ## What this product does not do
 
@@ -79,4 +79,4 @@ estate overlay, not in this repository.
 scripts/validate_module.sh
 ```
 
-Public CI for this repository runs on `ubuntu-latest` only.
+Public CI for this repository runs on the exact `ubuntu-26.04` image only.
