@@ -52,7 +52,7 @@ git:
 verification:
   commands:
     test:
-    - scripts/validate_module.sh
+    - just verify
   required:
   - test
   required_contexts: []

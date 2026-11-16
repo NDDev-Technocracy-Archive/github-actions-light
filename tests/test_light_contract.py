@@ -92,6 +92,22 @@ class LightContractTests(unittest.TestCase):
     def test_public_ci_is_hosted(self) -> None:
         self.contract.assert_public_ci()
 
+    def test_public_ci_refuses_private_or_unpinned_replacements(self) -> None:
+        workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+        caller = "NDDev-Technocracy-OpenNetwork/nddev-ci/.github/workflows/check.yml"
+        cases = (
+            workflow.replace("hosted-runner: ubuntu-26.04", "hosted-runner: ubuntu-latest"),
+            workflow.replace("hosted-runner: ubuntu-26.04", "hosted-runner: ubuntu-24.04"),
+            workflow.replace(caller, "example-org/other/.github/workflows/check.yml"),
+            workflow.replace(caller + "@", caller + "@main-"),
+            workflow + "\n  direct: {runs-on: private-example}\n",
+            workflow + "\n    secrets: inherit\n",
+            workflow.replace("pull_request:", "pull_request_target:"),
+        )
+        for candidate in cases:
+            with self.subTest(candidate=candidate), self.assertRaises(SystemExit):
+                self.contract.assert_public_ci(candidate)
+
     def test_full_contract(self) -> None:
         self.contract.main()
 

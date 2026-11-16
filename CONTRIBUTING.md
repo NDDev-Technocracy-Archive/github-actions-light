@@ -12,10 +12,11 @@ Please report security problems privately per [SECURITY.md](SECURITY.md).
 - Do not add GARM, Incus, admission, placement, or a custom queue.
 - Do not embed real host, organization, or credential values.
 - Pin `actions/runner` by version, URL, and SHA-256 in `config/runner-pin.json`.
-- Pin third-party GitHub Actions by full SHA in `catalog/actions.yml`.
+- Pin shared workflow calls by full SHA in `.github/workflows`; keep version
+  updates in the normal dependency updater.
 
 ## Before a pull request
 
 ```
-bash scripts/validate_module.sh
+just verify
 ```

@@ -45,16 +45,31 @@ def load_pin() -> dict:
     return pin
 
 
-def assert_public_ci() -> None:
-    workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
-    if "runs-on: ubuntu-26.04" not in workflow:
+def assert_public_ci(workflow: str | None = None) -> None:
+    if workflow is None:
+        workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+    caller = "NDDev-Technocracy-OpenNetwork/nddev-ci/.github/workflows/check.yml"
+    uses = re.findall(r"\buses\s*:\s*([^\s,}]+)", workflow)
+    if len(uses) != 1 or not re.fullmatch(re.escape(caller) + r"@[0-9a-f]{40}", uses[0]):
+        fail("public CI must use one immutable shared check caller")
+    if not re.search(r"\bhosted-runner\s*:\s*ubuntu-26\.04\s*$", workflow, re.MULTILINE):
         fail("public CI must use the exact ubuntu-26.04 image")
-    if "-latest" in workflow:
-        fail("public CI must not use a floating -latest runner label")
-    if "self-hosted" in workflow or "nddev-linux" in workflow:
-        fail("public CI must not use self-hosted labels")
-    if "pull_request_target" in workflow or "secrets:" in workflow:
-        fail("public CI trust boundary drifted")
+    if re.search(r"\b(?:runs-on|secrets|pull_request_target)\s*:", workflow):
+        fail("public CI must delegate jobs without private trust or runner overrides")
+    if "-latest" in workflow or "self-hosted" in workflow or "nddev-linux" in workflow:
+        fail("public CI must not use floating or private runner labels")
+    library = caller.rsplit("/.github/", 1)[0] + "/.github/"
+    sha = uses[0].rsplit("@", 1)[1]
+    for path in (ROOT / ".github/workflows").glob("*.yml"):
+        for reference in re.findall(r"\buses\s*:\s*([^\s,}]+)", path.read_text(encoding="utf-8")):
+            if reference.startswith(library) and not reference.endswith("@" + sha):
+                fail("shared CI callers must use one immutable revision")
+
+
+def assert_source_syntax() -> None:
+    for relative in ("scripts/light_contract.py", "tests/test_light_contract.py"):
+        path = ROOT / relative
+        compile(path.read_bytes(), str(path), "exec")
 
 
 def assert_units(pin: dict) -> None:
@@ -174,46 +189,8 @@ def assert_no_estate_facts() -> None:
                 fail(f"{path.relative_to(ROOT)} names a private organization")
 
 
-def assert_actions_catalog() -> None:
-    catalog = _load_catalog()
-    workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
-    uses = re.findall(r"uses:\s+([^\s@]+)@([0-9a-f]{40})", workflow)
-    by_name = {item["name"]: item for item in catalog["actions"]}
-    if not uses:
-        fail("ci workflow has no pinned actions")
-    for name, sha in uses:
-        entry = by_name.get(name)
-        if entry is None:
-            fail(f"undeclared action {name}")
-        if entry["sha"] != sha:
-            fail(f"{name} sha drifted from catalog")
-        if entry["version"] not in workflow:
-            fail(f"{name} catalog version is missing from ci.yml")
-
-
-def _load_catalog() -> dict:
-    # Tiny YAML subset: the catalog is a short list of name/sha/version maps.
-    text = (ROOT / "catalog/actions.yml").read_text(encoding="utf-8")
-    actions: list[dict[str, str]] = []
-    current: dict[str, str] = {}
-    for raw_line in text.splitlines():
-        line = raw_line.strip()
-        if line.startswith("- name:"):
-            if current:
-                actions.append(current)
-            current = {"name": line.split(":", 1)[1].strip().strip('"')}
-        elif line.startswith("sha:") and current:
-            current["sha"] = line.split(":", 1)[1].strip().strip('"')
-        elif line.startswith("version:") and current:
-            current["version"] = line.split(":", 1)[1].strip().strip('"')
-    if current:
-        actions.append(current)
-    if not actions:
-        fail("catalog/actions.yml has no actions")
-    return {"actions": actions}
-
-
 def main() -> None:
+    assert_source_syntax()
     pin = load_pin()
     assert_public_ci()
     assert_units(pin)
@@ -221,7 +198,6 @@ def main() -> None:
     assert_host_hygiene()
     assert_slot_isolation()
     assert_no_estate_facts()
-    assert_actions_catalog()
     print("github-actions-light contract ok")
 
 
