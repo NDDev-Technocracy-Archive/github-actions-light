@@ -1,38 +1,24 @@
 name: ci
 
 on:
-  push:
-    branches: [main]
   pull_request:
     branches: [main]
+    types: [opened, synchronize, reopened, labeled, edited]
+  push:
+    branches: [main]
+  workflow_dispatch: {}
 
-permissions:
-  contents: read
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+permissions: {}
 
 jobs:
-  validate:
-    name: static validators
-    runs-on: ubuntu-26.04
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - name: Validate public module
-        run: scripts/validate_module.sh
-
-  test:
-    name: test
-    needs: validate
-    if: ${{ always() }}
-    runs-on: ubuntu-26.04
-    timeout-minutes: 5
-    steps:
-      - name: Preserve required check identity
-        env:
-          VALIDATE_RESULT: ${{ needs.validate.result }}
-        run: test "$VALIDATE_RESULT" = success
+  check:
+    uses: NDDev-Technocracy-OpenNetwork/nddev-ci/.github/workflows/check.yml@86d0117166c205c6b52c91e0f95c8deaf5a29137 # v0.6.59
+    permissions:
+      contents: read
+    with:
+      hosted-runner: ubuntu-26.04
+      fetch-depth: 0
+      python-version: "3.15.2"
+      tools: zizmor@1.32.0
+      tool-assets: .github/ci-tools.json
+      timeout-minutes: 10

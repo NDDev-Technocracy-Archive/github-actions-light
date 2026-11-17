@@ -75,8 +75,12 @@ estate overlay, not in this repository.
 
 ## Verification
 
+`just check` validates the source contract, Python syntax, workflows and secrets
+offline without running tests or writing bytecode. `just test` runs the contract
+suite with its owned temporary slot fixture. `just verify` runs both.
+
 ```bash
-scripts/validate_module.sh
+just verify
 ```
 
 Public CI for this repository runs on the exact `ubuntu-26.04` image only.

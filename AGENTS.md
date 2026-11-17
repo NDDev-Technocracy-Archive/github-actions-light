@@ -10,4 +10,6 @@ fork code to private capacity.
 The product is the official `actions/runner` install contract. Do not add a
 scheduler, GARM, Incus, or a custom job queue.
 
-Run `scripts/validate_module.sh` after changes.
+Use `just check` for offline source feedback and `just test` on an admitted
+executor. `just verify` runs both. Source verification never installs or
+registers a runner, starts a service, or cleans a host.
